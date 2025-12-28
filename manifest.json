@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "StreamGuide - Where to Watch",
+  "version": "1.0.0",
+  "description": "Instantly see where to stream any movie or TV show. Works on IMDB, Rotten Tomatoes, Google, and more.",
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": [
+    "https://streamguide-api.onrender.com/*",
+    "*://*.imdb.com/*",
+    "*://*.rottentomatoes.com/*",
+    "*://www.google.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.imdb.com/title/*"],
+      "js": ["scripts/imdb.js"],
+      "css": ["styles.css"]
+    },
+    {
+      "matches": ["*://*.rottentomatoes.com/m/*", "*://*.rottentomatoes.com/tv/*"],
+      "js": ["scripts/rottentomatoes.js"],
+      "css": ["styles.css"]
+    },
+    {
+      "matches": ["*://www.google.com/search*"],
+      "js": ["scripts/google.js"],
+      "css": ["styles.css"]
+    }
+  ]
+}
