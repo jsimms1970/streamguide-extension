@@ -9,6 +9,7 @@ const serviceFilter = document.getElementById('serviceFilter');
 const tabs = document.querySelectorAll('.tab');
 const searchTab = document.getElementById('searchTab');
 const newTab = document.getElementById('newTab');
+const seeAllContainer = document.getElementById('seeAllContainer');
 
 let searchTimeout = null;
 let currentResults = [];
@@ -333,12 +334,14 @@ tabs.forEach(tab => {
     if (tabName === 'search') {
       searchTab.style.display = 'block';
       newTab.style.display = 'none';
+      seeAllContainer.style.display = 'none';
       resultsDiv.innerHTML = '';
       currentTab = 'search';
       searchInput.focus();
     } else {
       searchTab.style.display = 'none';
       newTab.style.display = 'block';
+      seeAllContainer.style.display = 'block';
       currentTab = 'trending';
       loadTrendingContent(serviceFilter.value);
     }

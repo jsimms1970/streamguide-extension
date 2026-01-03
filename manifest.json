@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "StreamGuide - Where to Watch",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Instantly see where to stream any movie or TV show. Works on IMDB, Rotten Tomatoes, and Google.",
   "permissions": ["scripting", "activeTab"],
   "host_permissions": [
