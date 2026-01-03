@@ -5,9 +5,14 @@ const STREAMGUIDE_API = 'https://streamguide-api.onrender.com';
 const searchInput = document.getElementById('searchInput');
 const resultsDiv = document.getElementById('results');
 const showWidgetBtn = document.getElementById('showWidgetBtn');
+const serviceFilter = document.getElementById('serviceFilter');
+const tabs = document.querySelectorAll('.tab');
+const searchTab = document.getElementById('searchTab');
+const newTab = document.getElementById('newTab');
 
 let searchTimeout = null;
 let currentResults = [];
+let currentTab = 'search';
 
 // Check if current tab is a supported site
 async function checkSupportedSite() {
@@ -229,3 +234,130 @@ document.getElementById('showWidgetBtn').addEventListener('click', async () => {
     console.error('Error showing widget:', error);
   }
 });
+
+// ===== WHAT'S NEW TAB =====
+
+// Fetch available services
+async function loadServices() {
+  try {
+    const response = await fetch(`${STREAMGUIDE_API}/v1/new/services?country=US`);
+    if (!response.ok) throw new Error('Failed to load services');
+    const data = await response.json();
+
+    // Populate dropdown with top services
+    data.services.slice(0, 15).forEach(service => {
+      const option = document.createElement('option');
+      option.value = service.service_name;
+      option.textContent = `${service.service_name} (${service.title_count})`;
+      serviceFilter.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error loading services:', error);
+  }
+}
+
+// Fetch new content
+async function loadNewContent(serviceName = '') {
+  resultsDiv.innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Loading new releases...</span>
+    </div>
+  `;
+
+  try {
+    let url = `${STREAMGUIDE_API}/v1/new?days=7&limit=20`;
+    if (serviceName) {
+      url += `&service=${encodeURIComponent(serviceName)}`;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to load new content');
+    const data = await response.json();
+
+    showNewContent(data.results);
+  } catch (error) {
+    console.error('Error loading new content:', error);
+    resultsDiv.innerHTML = '<div class="empty">Failed to load new releases</div>';
+  }
+}
+
+// Display new content
+function showNewContent(items) {
+  if (!items || items.length === 0) {
+    resultsDiv.innerHTML = '<div class="empty">No new releases this week</div>';
+    return;
+  }
+
+  // Dedupe by title (same title can appear on multiple service tiers)
+  const seen = new Set();
+  const uniqueItems = items.filter(item => {
+    const key = `${item.tmdb_id}-${item.service_name.split(' ')[0]}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  resultsDiv.innerHTML = uniqueItems.map((item, index) => `
+    <div class="new-item" data-index="${index}">
+      ${item.poster_url
+        ? `<img src="${item.poster_url}" class="new-item-poster" alt="">`
+        : '<div class="new-item-poster"></div>'}
+      <div class="new-item-info">
+        <div class="new-item-title">${item.title}</div>
+        <div class="new-item-meta">${item.content_type === 'movie' ? 'Movie' : 'TV Show'}${item.year ? ` • ${item.year}` : ''}</div>
+        <span class="new-item-service">${item.service_name}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Store for click handling
+  currentResults = uniqueItems.map(item => ({
+    id: item.id,
+    tmdb_id: item.tmdb_id,
+    title: item.title,
+    content_type: item.content_type,
+    year: item.year
+  }));
+
+  // Add click handlers
+  document.querySelectorAll('.new-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const index = parseInt(el.dataset.index);
+      selectResult(index);
+    });
+  });
+}
+
+// Tab switching
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const tabName = tab.dataset.tab;
+
+    // Update active tab
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Show/hide content
+    if (tabName === 'search') {
+      searchTab.style.display = 'block';
+      newTab.style.display = 'none';
+      resultsDiv.innerHTML = '';
+      currentTab = 'search';
+      searchInput.focus();
+    } else {
+      searchTab.style.display = 'none';
+      newTab.style.display = 'block';
+      currentTab = 'new';
+      loadNewContent(serviceFilter.value);
+    }
+  });
+});
+
+// Service filter change
+serviceFilter.addEventListener('change', () => {
+  loadNewContent(serviceFilter.value);
+});
+
+// Load services on startup
+loadServices();
