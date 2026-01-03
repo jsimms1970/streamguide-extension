@@ -240,7 +240,7 @@ document.getElementById('showWidgetBtn').addEventListener('click', async () => {
 // Fetch available services
 async function loadServices() {
   try {
-    const response = await fetch(`${STREAMGUIDE_API}/v1/new/services?country=US`);
+    const response = await fetch(`${STREAMGUIDE_API}/v1/trending/services?country=US`);
     if (!response.ok) throw new Error('Failed to load services');
     const data = await response.json();
 
@@ -256,63 +256,54 @@ async function loadServices() {
   }
 }
 
-// Fetch new content
-async function loadNewContent(serviceName = '') {
+// Fetch trending content
+async function loadTrendingContent(serviceName = '') {
   resultsDiv.innerHTML = `
     <div class="loading">
       <div class="spinner"></div>
-      <span>Loading new releases...</span>
+      <span>Loading trending titles...</span>
     </div>
   `;
 
   try {
-    let url = `${STREAMGUIDE_API}/v1/new?days=7&limit=20`;
+    let url = `${STREAMGUIDE_API}/v1/trending?limit=20`;
     if (serviceName) {
       url += `&service=${encodeURIComponent(serviceName)}`;
     }
 
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to load new content');
+    if (!response.ok) throw new Error('Failed to load trending content');
     const data = await response.json();
 
-    showNewContent(data.results);
+    showTrendingContent(data.results);
   } catch (error) {
-    console.error('Error loading new content:', error);
-    resultsDiv.innerHTML = '<div class="empty">Failed to load new releases</div>';
+    console.error('Error loading trending content:', error);
+    resultsDiv.innerHTML = '<div class="empty">Failed to load trending titles</div>';
   }
 }
 
-// Display new content
-function showNewContent(items) {
+// Display trending content
+function showTrendingContent(items) {
   if (!items || items.length === 0) {
-    resultsDiv.innerHTML = '<div class="empty">No new releases this week</div>';
+    resultsDiv.innerHTML = '<div class="empty">No trending titles found</div>';
     return;
   }
 
-  // Dedupe by title (same title can appear on multiple service tiers)
-  const seen = new Set();
-  const uniqueItems = items.filter(item => {
-    const key = `${item.tmdb_id}-${item.service_name.split(' ')[0]}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  resultsDiv.innerHTML = uniqueItems.map((item, index) => `
+  resultsDiv.innerHTML = items.map((item, index) => `
     <div class="new-item" data-index="${index}">
       ${item.poster_url
         ? `<img src="${item.poster_url}" class="new-item-poster" alt="">`
         : '<div class="new-item-poster"></div>'}
       <div class="new-item-info">
         <div class="new-item-title">${item.title}</div>
-        <div class="new-item-meta">${item.content_type === 'movie' ? 'Movie' : 'TV Show'}${item.year ? ` • ${item.year}` : ''}</div>
+        <div class="new-item-meta">${item.content_type === 'movie' ? 'Movie' : 'TV Show'}${item.year ? ` • ${item.year}` : ''}${item.vote_average ? ` • ⭐ ${item.vote_average.toFixed(1)}` : ''}</div>
         <span class="new-item-service">${item.service_name}</span>
       </div>
     </div>
   `).join('');
 
   // Store for click handling
-  currentResults = uniqueItems.map(item => ({
+  currentResults = items.map(item => ({
     id: item.id,
     tmdb_id: item.tmdb_id,
     title: item.title,
@@ -348,15 +339,15 @@ tabs.forEach(tab => {
     } else {
       searchTab.style.display = 'none';
       newTab.style.display = 'block';
-      currentTab = 'new';
-      loadNewContent(serviceFilter.value);
+      currentTab = 'trending';
+      loadTrendingContent(serviceFilter.value);
     }
   });
 });
 
 // Service filter change
 serviceFilter.addEventListener('change', () => {
-  loadNewContent(serviceFilter.value);
+  loadTrendingContent(serviceFilter.value);
 });
 
 // Load services on startup
